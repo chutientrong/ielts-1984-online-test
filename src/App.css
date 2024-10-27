@@ -1,0 +1,8 @@
+/* styles.css */
+body {
+  cursor: default; /* Default cursor */
+}
+
+.App {
+  padding: 5%;
+}

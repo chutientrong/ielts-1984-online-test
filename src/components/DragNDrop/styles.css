@@ -1,0 +1,11 @@
+.button {
+  width: 100px;
+  padding: 10px;
+  margin: 5px;
+  background-color: lightskyblue;
+  border-radius: 5px;
+  border-width: 1;
+}
+.button.reset {
+  background-color: lightsalmon;
+}
