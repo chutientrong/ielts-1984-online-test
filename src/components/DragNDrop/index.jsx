@@ -94,7 +94,6 @@ const DragNDrop = () => {
 
       // Clear the previous value in the previous drop zone if it exists
       const currentValue = getValues(`${dropZoneId}`);
-
       // Set the value for the new drop zone
       setValue(`${dropZoneId}`, draggedWord.word);
       setActiveId(null); // Reset active ID
@@ -111,12 +110,16 @@ const DragNDrop = () => {
         return;
       }
       if (draggedWord) {
-        if (currentValue && draggedWord.id !== currentValue.id) {
+        if (currentValue && draggedWord.word !== currentValue) {
           const draggedWordIndex = dragWordsClone.findIndex(
             (item) => item.id === draggedWord.id
           );
           dragWordsClone.splice(draggedWordIndex, 1);
-          dragWordsClone.push(currentValue);
+
+          const currentWord = initialDragWords.find(
+            (item) => item.word === currentValue
+          );
+          dragWordsClone.push(currentWord);
           setDragWords((prev) => [...dragWordsClone]);
         } else {
           const draggedWords = dragWordsClone.filter(
