@@ -94,7 +94,6 @@ const DragNDrop = () => {
 
       // Clear the previous value in the previous drop zone if it exists
       const currentValue = getValues(`${dropZoneId}`);
-      console.log('ddddddddddd',currentValue, draggedWord);
       // Set the value for the new drop zone
       setValue(`${dropZoneId}`, draggedWord.word);
       setActiveId(null); // Reset active ID
@@ -116,6 +115,7 @@ const DragNDrop = () => {
             (item) => item.id === draggedWord.id
           );
           dragWordsClone.splice(draggedWordIndex, 1);
+
           const currentWord = initialDragWords.find(
             (item) => item.word === currentValue
           );
@@ -268,7 +268,7 @@ const DragNDrop = () => {
     setDragWords(dragWords);
     setInitialDragWords(dragWords);
   }, []);
-console.log('blanks', blanks, dragWords)
+
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <DndContext onDragEnd={handleDragEnd}>
