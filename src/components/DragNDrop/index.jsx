@@ -8,7 +8,8 @@ import { CSS } from "@dnd-kit/utilities";
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { RiDragDropLine } from "react-icons/ri";
-import './styles.css'
+import "./styles.css";
+import { FiRotateCcw } from "react-icons/fi";
 
 const boxShadowBorder =
   "0 0 0 calc(1px / var(--scale-x, 1)) rgba(63, 63, 68, 0.05)";
@@ -34,6 +35,8 @@ const DragNDrop = () => {
   const [paragraph, setParagraph] = useState("");
   const [blanks, setBlanks] = useState([]);
   const [dragWords, setDragWords] = useState([]);
+  const [initialDragWords, setInitialDragWords] = useState([]);
+  const [isCorrect, setIsCorrect] = useState(false);
   const {
     register,
     handleSubmit,
@@ -44,54 +47,95 @@ const DragNDrop = () => {
   } = useForm({ defaultValues: {} });
 
   const onSubmit = (data, e) => {
+    const blanksClone = [...blanks];
     const keys = Object.keys(data);
-    setBlanks((prevBlanks) => {
-      return prevBlanks.map((blank) => {
-        const key = keys.find((k) => parseInt(k) === blank.id);
-        if (key >= 0 && data[key]) {
-          if (data[key] === blank.correctAnswer) {
-            return {
-              ...blank,
-              isCorrect: true,
-            };
-          } else {
-            return {
-              ...blank,
-              isCorrect: false,
-            };
-          }
+    const blanksUpdated = blanksClone.map((blank) => {
+      const key = keys.find((k) => parseInt(k) === blank.id);
+      if (key >= 0 && data[key]) {
+        if (data[key] === blank.correctAnswer) {
+          return {
+            ...blank,
+            isCorrect: true,
+          };
+        } else {
+          return {
+            ...blank,
+            isCorrect: false,
+          };
         }
-        return {
-          ...blank,
-          isCorrect: false,
-        };
-      });
+      }
+      return {
+        ...blank,
+        isCorrect: false,
+      };
     });
+    const isCorrect = blanksUpdated.every((blank) => blank.isCorrect);
+    setBlanks(blanksUpdated);
+    setIsCorrect(isCorrect);
   };
 
   // Reset function to clear answers
   const handleReset = (event) => {
     event.preventDefault();
     reset({}); // reset other form state but keep defaultValues and form values
-    setBlanks(blanks.map((blank) => ({ ...blank, isCorrect: null })));
+    setBlanks((prev) =>
+      prev.map((blank) => ({ ...blank, answer: "", isCorrect: null }))
+    );
+    setDragWords(initialDragWords);
   };
 
   const handleDragEnd = (event) => {
     const { active, over } = event;
-    if (over) {
-      const dropZoneId = Number(over.id.split("-")[2]); // Get the drop zone number
-      const draggedWord = active.id; // Get the dragged word
-      console.log(dropZoneId, draggedWord);
-      setValue(`${dropZoneId}`, draggedWord);
+    // Check if the item is dropped over a valid drop zone
+    if (over && over.id.startsWith("drop-zone")) {
+      const dropZoneId = Number(over.id.split("-")[2]); // Extract the drop zone ID
+      const dragWordsClone = [...dragWords];
+      const draggedWord = dragWordsClone.find((item) => item.id === active.id); // Get the ID of the dragged word
+
+      // Clear the previous value in the previous drop zone if it exists
+      const currentValue = getValues(`${dropZoneId}`);
+      console.log('ddddddddddd',currentValue, draggedWord);
+      // Set the value for the new drop zone
+      setValue(`${dropZoneId}`, draggedWord.word);
+      setActiveId(null); // Reset active ID
+      // add new
+      if (!currentValue) {
+        const draggedWords = dragWordsClone.filter(
+          (b) => b.id !== draggedWord.id
+        );
+        setDragWords(draggedWords);
+        return;
+      }
+      // swap
+      if (!draggedWord) {
+        return;
+      }
+      if (draggedWord) {
+        if (currentValue && draggedWord.word !== currentValue) {
+          const draggedWordIndex = dragWordsClone.findIndex(
+            (item) => item.id === draggedWord.id
+          );
+          dragWordsClone.splice(draggedWordIndex, 1);
+          const currentWord = initialDragWords.find(
+            (item) => item.word === currentValue
+          );
+          dragWordsClone.push(currentWord);
+          setDragWords((prev) => [...dragWordsClone]);
+        } else {
+          const draggedWords = dragWordsClone.filter(
+            (b) => b.id !== draggedWord.id
+          );
+          setDragWords(draggedWords);
+        }
+      }
     }
-    setActiveId(null);
   };
 
   const DraggableWord = ({ word, isPlaced }) => {
     const { attributes, listeners, setNodeRef, isDragging, transform } =
       useDraggable({
-        id: word.word,
-        onDragStart: () => setActiveId(word.word),
+        id: word.id,
+        onDragStart: () => setActiveId(word.id),
       });
 
     if (isPlaced) return null;
@@ -107,7 +151,7 @@ const DragNDrop = () => {
           padding: "10px",
           margin: "5px",
           backgroundColor: word.color === "red" ? "lightcoral" : "lightgray",
-          opacity: isDragging ? 0.5 : 1,
+          opacity: isDragging ? 0.3 : 1,
           cursor: isDragging ? "grabbing" : "grab",
           borderRadius: "5px",
           ...getItemStyles(isDragging),
@@ -167,9 +211,34 @@ const DragNDrop = () => {
               : isOver
               ? "lightblue"
               : "white",
+          position: "relative", // Added for positioning
         }}
       >
-        {value || "Drop Here!"} {/* Show the answer or prompt */}
+        {/* {value && (
+          <div
+            style={{
+              position: "absolute", // Added for positioning
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              zIndex: 1, // Added for stacking order
+            }}
+          >
+            <DraggableWord
+              word={{
+                id: value.id,
+                word: value.word,
+                color: value?.color || "default",
+              }}
+              // isPlaced={true}
+            />{" "}
+          </div>
+        )} */}
+        {value || "Drop Here!"}
       </div>
     );
   };
@@ -178,10 +247,11 @@ const DragNDrop = () => {
     const data = {
       question: {
         paragraph:
-          "The sky is [_input] and the grass is [_input]. You should drag the word <span style='color: red;'>green</span> to the correct blank.",
+          "The sky is [_input], the grass is [_input], and the hat is [_input]. You should drag the word <span style='color: red;'>green</span> to the correct blank.",
         blanks: [
           { id: 1, correctAnswer: "blue", type: "input" },
           { id: 2, correctAnswer: "green", type: "drag" },
+          { id: 3, correctAnswer: "red", type: "drag" },
         ],
         dragWords: [
           { word: "blue", color: "default", id: 1 },
@@ -196,8 +266,9 @@ const DragNDrop = () => {
     setParagraph(paragraph);
     setBlanks(() => blanks.map((blank) => ({ ...blank, isCorrect: null })));
     setDragWords(dragWords);
+    setInitialDragWords(dragWords);
   }, []);
-
+console.log('blanks', blanks, dragWords)
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <DndContext onDragEnd={handleDragEnd}>
@@ -205,7 +276,7 @@ const DragNDrop = () => {
           style={{
             display: "flex",
             alignItems: "center",
-            color: "blue",
+            color: isCorrect ? "blue" : "lightcoral",
             fontSize: "24px",
             fontWeight: "bold",
           }}
@@ -254,7 +325,7 @@ const DragNDrop = () => {
           onClick={handleReset}
           style={{ marginTop: "10px", marginLeft: "10px" }}
         >
-          Reset
+          <FiRotateCcw /> Reset
         </button>
       </DndContext>
     </form>
